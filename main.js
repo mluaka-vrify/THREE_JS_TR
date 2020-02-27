@@ -1,98 +1,86 @@
 (() => {
-  // -- create a canvas and render it
+  // -- initialization
+  const scene = new THREE.Scene()
   const canvas = document.getElementById('c')
-  const renderer = new THREE.WebGLRenderer({ canvas })
+  const renderer = new THREE.WebGLRenderer({ canvas })  
+  
+  // -- create a re-usable sphere blueprint
+  const sphereGeometry = new THREE.SphereBufferGeometry(1, 6, 6)
+
+  const sunMaterial = new THREE.MeshPhongMaterial({ emissive: 0xFFFF00 })
+  const sunMesh = _getSun(sphereGeometry, sunMaterial)
+
+  const earthMaterial = new THREE.MeshPhongMaterial({ color: 0x2233FF, emissive: 0x112244 })
+  const earthMesh = _getEarth(sphereGeometry, earthMaterial)
 
   // -- setting up the camera's perspective
-  const camera = _getCamera(75, 2, 0.1, 5)
-
-  // -- setting up the scene
-  const scene = new THREE.Scene()
-  const createCube = _cubeCreator(scene)
-
-  // -- create a box
-  const geometry = _getGeometry(1, 1, 1)
+  const camera = _getCamera(40, 2, 0.1, 1000)
 
   // -- create a light object
-  const light = _getLighting(0xFFFFFF, 1)
+  const light = new THREE.PointLight(0xFFFFFF, 3)
 
   // -- add objects to the scene
   scene.add(light)
-  const cubes = [
-    createCube(geometry, 0x44aa88, 0),
-    createCube(geometry, 0x8844aa, -2),
-    createCube(geometry, 0xaa8844, 2)
-  ]
+  scene.add(sunMesh)
+  scene.add(earthMesh)
 
   // -- render everything
-  requestAnimationFrame(_render(renderer, scene, camera, cubes))
+  requestAnimationFrame(_render(
+    renderer,
+    scene,
+    camera,
+    time => [sunMesh, earthMesh].forEach(obj => (obj.rotation.y = time))
+  ))
 })()
 
-function _render (renderer, scene, camera, cubes) {
+function _render (renderer, scene, camera, cb) {
+  function resizeRendererToDisplay () {
+    const canvas = renderer.domElement
+    const pixelRatio = window.devicePixelRatio
+    const width = canvas.clientWidth * pixelRatio | 0
+    const height = canvas.clientHeight * pixelRatio | 0
+    const needResize = canvas.width !== width || canvas.height !== height
+  
+    if (needResize) {
+      renderer.setSize(width, height, false)
+    }
+  
+    return needResize
+  }
+
   return function (time) {
     // -- convert time to seconds
     time *= 0.001
 
-    if (_resizeRendererToDisplay(renderer)) {
+    if (resizeRendererToDisplay()) {
       const canvas = renderer.domElement
       camera.aspect = canvas.clientWidth / canvas.clientHeight
       camera.updateProjectionMatrix()
     }
 
-    cubes.forEach((cube, ndx) => {
-      const speed = 1 + ndx * .1
-      const rot = time * speed
-
-      cube.rotation.x = rot
-      cube.rotation.y = rot
-    })
-
+    cb(time)
     renderer.render(scene, camera)
-    requestAnimationFrame(_render(renderer, scene, camera, cubes))
-  }
-}
-
-function _cubeCreator (scene) {
-  return function (geometry, color, x /** x value on the x-axis (controls side to side movements) */) {
-    const material = new THREE.MeshPhongMaterial({ color })
-    const cube = new THREE.Mesh(geometry, material)
-
-    scene.add(cube)
-
-    cube.position.x = x
-
-    return cube
+    requestAnimationFrame(_render(renderer, scene, camera, cb))
   }
 }
 
 function _getCamera (fov, aspect, near, far) {
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far)
-  camera.position.z = 2
+  camera.position.set(0, 50, 0)
+  camera.up.set(0, 0, 1)
+  camera.lookAt(0, 0, 0)
 
   return camera
 }
 
-function _getLighting (color, intensity) {
-  const light = new THREE.DirectionalLight(color, intensity)
-  light.position.set(-1, 2, 4)
-
-  return light
+function _getSun(geometry, material) {
+  const sunMesh = new THREE.Mesh(geometry, material)
+  sunMesh.scale.set(5, 5, 5)
+  return sunMesh
 }
 
-function _getGeometry (w, h, d) {
-  return new THREE.BoxGeometry(w, h, d)
-}
-
-function _resizeRendererToDisplay (renderer) {
-  const canvas = renderer.domElement
-  const pixelRatio = window.devicePixelRatio
-  const width = canvas.clientWidth * pixelRatio | 0
-  const height = canvas.clientHeight * pixelRatio | 0
-  const needResize = canvas.width !== width || canvas.height !== height
-
-  if (needResize) {
-    renderer.setSize(width, height, false)
-  }
-
-  return needResize
+function _getEarth(geometry, material) {
+  const earthMesh = new THREE.Mesh(geometry, material)
+  earthMesh.position.x = 10
+  return earthMesh
 }
