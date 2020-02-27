@@ -1,93 +1,101 @@
+import * as dat from 'dat.gui'
 import * as THREE from 'three'
 import GenerateOrbitalControls from 'three-orbit-controls'
 
-(() => {
-  // -- initialization
+/**
+ * 1) create a renderer
+ * 2) create a scene & a camera
+ * 3) create geometric object & its material
+ * 4) create a mesh by using results from step 3
+ * 5) add mesh object to the scene
+ * 6) renderer scene with its camera(s)
+ */
+
+(() => { // -- init function
+  // -- scene === a container for every object you will be rendering
+  const gui = new dat.GUI()
   const scene = new THREE.Scene()
-  const canvas = document.getElementById('c')
-  const renderer = new THREE.WebGLRenderer({ canvas })  
-  
-  // -- create a re-usable sphere blueprint
-  const sphereGeometry = new THREE.SphereBufferGeometry(1, 6, 6)
+  const camera = getCamera()
+  const light = getPointLight(1)
+  const renderer = getRendererScene()
 
-  const sunMaterial = new THREE.MeshPhongMaterial({ emissive: 0xFFFF00 })
-  const sunMesh = _getSun(sphereGeometry, sunMaterial)
+  // -- every time you are creating an object in Threejs, you must add it to the scene in order to see it
+  scene.add(getPlane(20))
+  scene.add(getBox(1, 1, 1))
+  light.add(getSphere(0.05)) 
+  scene.add(light)
 
-  const earthMaterial = new THREE.MeshPhongMaterial({ color: 0x2233FF, emissive: 0x112244 })
-  const earthMesh = _getEarth(sphereGeometry, earthMaterial)
-
-  // -- setting up the camera's perspective
-  const camera = _getCamera(40, 2, 0.1, 1000)
-
-  // -- create a light object
-  const light = new THREE.PointLight(0xFFFFFF, 3)
+  gui.add(light, 'intensity', 0, 10)
+  gui.add(light.position, 'y', 0, 5)
 
   const OrbitalControls = GenerateOrbitalControls(THREE)
   const controls = new OrbitalControls(camera, renderer.domElement)
   console.log( controls )
 
-  // -- add objects to the scene
-  scene.add(light)
-  scene.add(sunMesh)
-  scene.add(earthMesh)
-
-  // -- render everything
-  requestAnimationFrame(_render(
-    renderer,
-    scene,
-    camera,
-    time => [sunMesh, earthMesh].forEach(obj => (obj.rotation.y = time))
-  ))
+  update(renderer, camera, scene)
 })()
 
-function _render (renderer, scene, camera, cb) {
-  function resizeRendererToDisplay () {
-    const canvas = renderer.domElement
-    const pixelRatio = window.devicePixelRatio
-    const width = canvas.clientWidth * pixelRatio | 0
-    const height = canvas.clientHeight * pixelRatio | 0
-    const needResize = canvas.width !== width || canvas.height !== height
-  
-    if (needResize) {
-      renderer.setSize(width, height, false)
-    }
-  
-    return needResize
-  }
+function getCamera() {
+  const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth/window.innerHeight,
+    1,
+    1000
+  )
 
-  return function (time) {
-    // -- convert time to seconds
-    time *= 0.001
-
-    if (resizeRendererToDisplay()) {
-      const canvas = renderer.domElement
-      camera.aspect = canvas.clientWidth / canvas.clientHeight
-      camera.updateProjectionMatrix()
-    }
-
-    cb(time)
-    renderer.render(scene, camera)
-    requestAnimationFrame(_render(renderer, scene, camera, cb))
-  }
-}
-
-function _getCamera (fov, aspect, near, far) {
-  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far)
-  camera.position.set(0, 50, 0)
-  camera.up.set(0, 0, 1)
-  camera.lookAt(0, 0, 0)
+  camera.position.set(1, 2, 5)
+  camera.lookAt(new THREE.Vector3(0, 0, 0))
 
   return camera
 }
 
-function _getSun(geometry, material) {
-  const sunMesh = new THREE.Mesh(geometry, material)
-  sunMesh.scale.set(5, 5, 5)
-  return sunMesh
+function getBox(w, h, d, color = 'rgb(120, 120, 120)') {
+  const geometry = new THREE.BoxGeometry(w, h, d)
+  const material = new THREE.MeshPhongMaterial({ color })
+  const mesh = new THREE.Mesh(geometry, material)
+  
+  mesh.position.y = mesh.geometry.parameters.height/2
+
+  return mesh
 }
 
-function _getEarth(geometry, material) {
-  const earthMesh = new THREE.Mesh(geometry, material)
-  earthMesh.position.x = 10
-  return earthMesh
+function getSphere(size) {
+  const geometry = new THREE.SphereGeometry(size, 24, 24)
+  const material = new THREE.MeshBasicMaterial({ color: 'rgb(255, 255, 255)' })
+  const mesh = new THREE.Mesh(geometry, material)
+  
+  // mesh.position.y = mesh.geometry.parameters.height/2
+
+  return mesh
+}
+
+function getPlane(size, color = 'rgb(120, 120, 120)') {
+  const geometry = new THREE.PlaneGeometry(size, size)
+  const material = new THREE.MeshPhongMaterial({ color, side: THREE.DoubleSide })
+  const mesh = new THREE.Mesh(geometry, material)
+  
+  mesh.rotation.x = Math.PI/2
+
+  return mesh
+}
+
+function getPointLight(intensity) {
+  const light = new THREE.PointLight(0xffffff, intensity)
+  light.position.y = 1.5
+
+  return light
+}
+
+function getRendererScene() {
+  const renderer = new THREE.WebGLRenderer()
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setClearColor('rgb(120, 120, 120)')
+  document.getElementById('c').appendChild(renderer.domElement)
+
+  return renderer
+}
+
+function update(renderer, camera, scene) {
+  renderer.render(scene, camera)
+  requestAnimationFrame(() => update(renderer, camera, scene))
 }
