@@ -1,3 +1,6 @@
+import * as THREE from 'three'
+import GenerateOrbitalControls from 'three-orbit-controls'
+
 (() => {
   // -- initialization
   const scene = new THREE.Scene()
@@ -18,6 +21,10 @@
 
   // -- create a light object
   const light = new THREE.PointLight(0xFFFFFF, 3)
+
+  const OrbitalControls = GenerateOrbitalControls(THREE)
+  const controls = new OrbitalControls(camera, renderer.domElement)
+  console.log( controls )
 
   // -- add objects to the scene
   scene.add(light)

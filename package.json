@@ -4,12 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "webpack",
+    "start": "webpack-dev-server --output-public-path=/build/"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "three": "0.113.2"
+    "three": "0.113.2",
+    "three-orbit-controls": "82.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.8.6",
+    "@babel/preset-env": "7.8.6",
+    "babel-loader": "8.0.6",
+    "webpack": "4.41.6",
+    "webpack-cli": "3.3.11",
+    "webpack-dev-server": "3.10.3"
   }
 }
