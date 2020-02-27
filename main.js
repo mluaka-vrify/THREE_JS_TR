@@ -28,12 +28,28 @@ import GenerateOrbitalControls from 'three-orbit-controls'
   gui.add(light, 'intensity', 0, 10)
   gui.add(light.position, 'y', 0, 5)
 
+  // -- enables camera movements
   const OrbitalControls = GenerateOrbitalControls(THREE)
   const controls = new OrbitalControls(camera, renderer.domElement)
-  console.log( controls )
 
-  update(renderer, camera, scene)
+  update(renderer, camera, scene, controls)
 })()
+
+function update(renderer, camera, scene, controls) {
+  renderer.render(scene, camera)
+  controls.update()
+  requestAnimationFrame(() => update(renderer, camera, scene, controls))
+}
+
+function getRendererScene() {
+  const renderer = new THREE.WebGLRenderer()
+  renderer.shadowMap.enabled = true
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setClearColor('rgb(120, 120, 120)')
+  document.getElementById('c').appendChild(renderer.domElement)
+
+  return renderer
+}
 
 function getCamera() {
   const camera = new THREE.PerspectiveCamera(
@@ -54,6 +70,7 @@ function getBox(w, h, d, color = 'rgb(120, 120, 120)') {
   const material = new THREE.MeshPhongMaterial({ color })
   const mesh = new THREE.Mesh(geometry, material)
   
+  mesh.castShadow = true
   mesh.position.y = mesh.geometry.parameters.height/2
 
   return mesh
@@ -74,6 +91,7 @@ function getPlane(size, color = 'rgb(120, 120, 120)') {
   const material = new THREE.MeshPhongMaterial({ color, side: THREE.DoubleSide })
   const mesh = new THREE.Mesh(geometry, material)
   
+  mesh.receiveShadow = true
   mesh.rotation.x = Math.PI/2
 
   return mesh
@@ -81,21 +99,8 @@ function getPlane(size, color = 'rgb(120, 120, 120)') {
 
 function getPointLight(intensity) {
   const light = new THREE.PointLight(0xffffff, intensity)
+  light.castShadow = true
   light.position.y = 1.5
 
   return light
-}
-
-function getRendererScene() {
-  const renderer = new THREE.WebGLRenderer()
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.setClearColor('rgb(120, 120, 120)')
-  document.getElementById('c').appendChild(renderer.domElement)
-
-  return renderer
-}
-
-function update(renderer, camera, scene) {
-  renderer.render(scene, camera)
-  requestAnimationFrame(() => update(renderer, camera, scene))
 }
